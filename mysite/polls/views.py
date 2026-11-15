@@ -13,6 +13,8 @@ from .forms import QuestionForm
 
 from .models import Choice, Question
 
+# Import connection from django.db to execute raw SQL queries (Flaw 3)
+from django.db import connection
 
 class IndexView(generic.ListView):
     template_name = 'polls/index.html'
@@ -109,12 +111,23 @@ def delete(request, question_id):
         return redirect("polls:my_polls")
     return render(request, "polls/delete.html", {"question": question})
 
+# Here you can find flaw 3
 def search(request):
     query = request.GET.get("q", "")
     results = []
     if query:
-        results = Question.objects.filter(
-            question_text__icontains=query,
-            pub_date__lte=timezone.now(),
-        ).order_by("-pub_date")
+        # FLAW 3: A03:2021 – Injection
+        # User input goes straight into the raw SQL, enabling SQL injection.
+        results = list(Question.objects.raw(
+            f"SELECT * FROM polls_question "
+            f"WHERE question_text LIKE '%{query}%'"
+        ))
+
+        # FIX 3: Use parameterized queries to prevent SQL injection attacks.
+        # results = list(Question.objects.raw(
+        #   "SELECT * FROM polls_question WHERE question_text LIKE %s",
+        #    ['%' + query + '%'],
+        #))
+
+
     return render(request, "polls/search.html", {"query": query, "results": results})
