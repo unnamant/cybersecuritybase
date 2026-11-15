@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head><title>Polls</title></head>
 <body>
 <nav>
   {% if user.is_authenticated %}
-    Kirjautunut: {{ user.username }}
+    Signed in as {{ user.username }}
     <form action="{% url 'logout' %}" method="post" style="display:inline">
       {% csrf_token %}
-      <button type="submit">Kirjaudu ulos</button>
+      <button type="submit">Log out</button>
     </form>
   {% else %}
-    <a href="{% url 'login' %}">Kirjaudu sisään</a>
+    <a href="{% url 'login' %}">Log in</a>
+    <a href="{% url 'polls:signup' %}">Sign up</a>
   {% endif %}
 </nav>
 <hr>

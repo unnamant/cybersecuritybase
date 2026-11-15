@@ -1,10 +1,11 @@
 {% extends "polls/base.html" %}
 {% block content %}
 
-<h1>Kirjaudu sisään</h1>
+<h1>Log in</h1>
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}
-  <button type="submit">Kirjaudu</button>
+  <button type="submit">Log in</button>
 </form>
+
 {% endblock %}
