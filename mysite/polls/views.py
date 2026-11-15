@@ -12,6 +12,10 @@ from .forms import QuestionForm
 
 from .models import Choice, Question
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # Import connection from django.db to execute raw SQL queries (Flaw 3)
 # from django.db import connection
 
@@ -119,7 +123,7 @@ def my_polls(request):
     questions = Question.objects.filter(owner=request.user).order_by("-pub_date")
     return render(request, "polls/my_polls.html", {"questions": questions})
 
-# Here you can find flaw 1
+# Here you can find flaw 1 and 5
 @login_required
 def delete(request, question_id):
     # FLAW 1: A01:2021 – Broken Access Control
@@ -129,6 +133,10 @@ def delete(request, question_id):
     # question = get_object_or_404(Question, pk=question_id, owner=request.user)
     # Otherwise, if the poll does not belong to the user, return a 404
     if request.method == "POST":
+        # FLAW 5: A09:2021 – Security Logging and Monitoring Failures
+        # Deleting a poll is not logged, so there is no audit trail of who deleted what (destructive action)
+        # FIX 5: Log the deletion so suspicious activity can be detected.
+        # logger.warning("User %s deleted poll %s", request.user.username, question.id)
         question.delete()
         return redirect("polls:my_polls")
     return render(request, "polls/delete.html", {"question": question})
