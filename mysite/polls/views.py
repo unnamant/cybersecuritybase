@@ -6,7 +6,6 @@ from django.utils import timezone
 
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import redirect
 
 from .forms import QuestionForm
@@ -14,7 +13,13 @@ from .forms import QuestionForm
 from .models import Choice, Question
 
 # Import connection from django.db to execute raw SQL queries (Flaw 3)
-from django.db import connection
+# from django.db import connection
+
+# Add the following imports for user authentication and password validation (Flaw 4)
+from django.contrib.auth.models import User
+# from django.contrib.auth.password_validation import validate_password
+# from django.core.exceptions import ValidationError
+from .forms import SignupForm
 
 class IndexView(generic.ListView):
     template_name = 'polls/index.html'
@@ -62,16 +67,33 @@ def vote(request, question_id):
         # user hits the Back button.
         return HttpResponseRedirect(reverse('polls:results', args=(question.id,)))
 
+# Here you can find flaw 4
 def signup(request):
+    error = None
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        form = SignupForm(request.POST)
+        # FLAW 4: A07:2021 – Identification and Authentication Failures
+        # The password is accepted without any strength check
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect("polls:index")
+            username = form.cleaned_data["username"]
+            password = form.cleaned_data["password"]
+
+            # FIX 4: Check the password against Django's validators
+            # try:
+            #     validate_password(password)
+            # except ValidationError as e:
+            #     error = " ".join(e.messages)
+            #     return render(request, "registration/signup.html", {"form": form, "error": error})
+
+            if User.objects.filter(username=username).exists():
+                error = "Username already taken."
+            else:
+                user = User.objects.create_user(username=username, password=password)
+                login(request, user)
+                return redirect("polls:index")
     else:
-        form = UserCreationForm()
-    return render(request, "registration/signup.html", {"form": form})
+        form = SignupForm()
+    return render(request, "registration/signup.html", {"form": form, "error": error})
 
 @login_required
 def create(request):
