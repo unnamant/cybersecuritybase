@@ -2,6 +2,7 @@
 {% block content %}
 
 <h1>Create a poll</h1>
+<p>Add at least 2 choices</p>
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}

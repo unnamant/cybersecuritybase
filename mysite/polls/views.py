@@ -89,3 +89,17 @@ def create(request):
     else:
         form = QuestionForm()
     return render(request, "polls/create.html", {"form": form})
+
+@login_required
+def my_polls(request):
+    questions = Question.objects.filter(owner=request.user).order_by("-pub_date")
+    return render(request, "polls/my_polls.html", {"questions": questions})
+
+
+@login_required
+def delete(request, question_id):
+    question = get_object_or_404(Question, pk=question_id, owner=request.user)
+    if request.method == "POST":
+        question.delete()
+        return redirect("polls:my_polls")
+    return render(request, "polls/delete.html", {"question": question})
