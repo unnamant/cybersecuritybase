@@ -5,8 +5,11 @@ from django.views import generic
 from django.utils import timezone
 
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import redirect
+
+from .forms import QuestionForm
 
 from .models import Choice, Question
 
@@ -67,3 +70,22 @@ def signup(request):
     else:
         form = UserCreationForm()
     return render(request, "registration/signup.html", {"form": form})
+
+@login_required
+def create(request):
+    if request.method == "POST":
+        form = QuestionForm(request.POST)
+        if form.is_valid():
+            question = Question.objects.create(
+                question_text=form.cleaned_data["question_text"],
+                pub_date=timezone.now(),
+                owner=request.user,
+            )
+            for field in ["choice1", "choice2", "choice3", "choice4"]:
+                text = form.cleaned_data[field]
+                if text:
+                    question.choice_set.create(choice_text=text)
+            return redirect("polls:detail", pk=question.id)
+    else:
+        form = QuestionForm()
+    return render(request, "polls/create.html", {"form": form})

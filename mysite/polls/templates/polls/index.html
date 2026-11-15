@@ -10,5 +10,6 @@
 {% else %}
     <p>No polls are available.</p>
 {% endif %}
+<a href="{% url 'polls:create' %}">Create poll</a>
 
 {% endblock %}  
