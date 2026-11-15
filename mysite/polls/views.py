@@ -95,10 +95,15 @@ def my_polls(request):
     questions = Question.objects.filter(owner=request.user).order_by("-pub_date")
     return render(request, "polls/my_polls.html", {"questions": questions})
 
-
+# Here you can find flaw 1
 @login_required
 def delete(request, question_id):
-    question = get_object_or_404(Question, pk=question_id, owner=request.user)
+    # FLAW 1: A01:2021 – Broken Access Control
+    # The flaw is that the delete view does not check if the logged-in user is the owner of the poll before allowing deletion. This could allow any authenticated user to delete any poll, regardless of ownership
+    question = get_object_or_404(Question, pk=question_id)
+    # FIX 1: Check if the logged-in user is the owner of the poll before allowing deletion
+    # question = get_object_or_404(Question, pk=question_id, owner=request.user)
+    # Otherwise, if the poll does not belong to the user, return a 404
     if request.method == "POST":
         question.delete()
         return redirect("polls:my_polls")
