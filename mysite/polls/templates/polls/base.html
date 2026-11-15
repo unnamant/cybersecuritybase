@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head><title>Polls</title></head>
+<body>
+<nav>
+  {% if user.is_authenticated %}
+    Kirjautunut: {{ user.username }}
+    <form action="{% url 'logout' %}" method="post" style="display:inline">
+      {% csrf_token %}
+      <button type="submit">Kirjaudu ulos</button>
+    </form>
+  {% else %}
+    <a href="{% url 'login' %}">Kirjaudu sisään</a>
+  {% endif %}
+</nav>
+<hr>
+{% block content %}{% endblock %}
+</body>
+</html>
