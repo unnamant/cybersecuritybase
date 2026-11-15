@@ -1,0 +1,23 @@
+{% extends "polls/base.html" %}
+{% block content %}
+
+<h1>Search polls</h1>
+<form method="get">
+  <input type="text" name="q" value="{{ query }}">
+  <button type="submit">Search</button>
+</form>
+
+{% if query %}
+  <h2>Results for "{{ query }}"</h2>
+  {% if results %}
+    <ul>
+    {% for question in results %}
+      <li><a href="{% url 'polls:detail' question.id %}">{{ question.question_text }}</a></li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p>No polls found.</p>
+  {% endif %}
+{% endif %}
+
+{% endblock %}

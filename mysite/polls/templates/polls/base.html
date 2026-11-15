@@ -4,6 +4,7 @@
 <body>
 <nav>
   <a href="{% url 'polls:index' %}">Home</a> |
+  <a href="{% url 'polls:search' %}">Search</a> |
   {% if user.is_authenticated %}
     Signed in as {{ user.username }} |
     <a href="{% url 'polls:create' %}">Create poll</a> |

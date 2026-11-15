@@ -108,3 +108,13 @@ def delete(request, question_id):
         question.delete()
         return redirect("polls:my_polls")
     return render(request, "polls/delete.html", {"question": question})
+
+def search(request):
+    query = request.GET.get("q", "")
+    results = []
+    if query:
+        results = Question.objects.filter(
+            question_text__icontains=query,
+            pub_date__lte=timezone.now(),
+        ).order_by("-pub_date")
+    return render(request, "polls/search.html", {"query": query, "results": results})

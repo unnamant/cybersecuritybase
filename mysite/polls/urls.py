@@ -12,4 +12,5 @@ urlpatterns = [
     path('create/', views.create, name='create'),
     path('<int:question_id>/delete/', views.delete, name='delete'),
     path('mine/', views.my_polls, name='my_polls'),
+    path('search/', views.search, name='search'),
 ]
