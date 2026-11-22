@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password, check_password
 from django.shortcuts import redirect
 
 from .forms import QuestionForm
@@ -25,6 +26,11 @@ from django.contrib.auth.models import User
 # from django.core.exceptions import ValidationError
 from .forms import SignupForm
 
+def is_unlocked(request, question):
+    if not question.access_password:
+        return True
+    return question.id in request.session.get("unlocked_polls", [])
+
 class IndexView(generic.ListView):
     template_name = 'polls/index.html'
     context_object_name = 'latest_question_list'
@@ -38,23 +44,42 @@ class IndexView(generic.ListView):
             pub_date__lte=timezone.now()
         ).order_by('-pub_date')[:5]
 
-class DetailView(generic.DetailView):
-    model = Question
-    template_name = 'polls/detail.html'
+def detail(request, pk):
+    question = get_object_or_404(Question, pk=pk, pub_date__lte=timezone.now())
 
-    def get_queryset(self):
-        """
-        Excludes any questions that aren't published yet.
-        """
-        return Question.objects.filter(pub_date__lte=timezone.now())
+    if not is_unlocked(request, question):
+        error = None
+        if request.method == "POST":
+            password = request.POST.get("access_password", "")
+
+            # FLAW 2: The password is compared as plain text.
+            correct = password == question.access_password
+
+            # FIX 2: Compare the password against the stored hash.
+            # correct = check_password(password, question.access_password)
+
+            if correct:
+                unlocked = request.session.get("unlocked_polls", [])
+                unlocked.append(question.id)
+                request.session["unlocked_polls"] = unlocked
+                return redirect("polls:detail", pk=question.id)
+            error = "Wrong password."
+        return render(request, "polls/password.html", {"question": question, "error": error})
+
+    return render(request, "polls/detail.html", {"question": question})
 
 
-class ResultsView(generic.DetailView):
-    model = Question
-    template_name = 'polls/results.html'
+def results(request, pk):
+    question = get_object_or_404(Question, pk=pk)
+    if not is_unlocked(request, question):
+        return redirect("polls:detail", pk=question.id)
+    return render(request, "polls/results.html", {"question": question})
 
 def vote(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
+    if not is_unlocked(request, question):
+        return redirect("polls:detail", pk=question.id)
+
     try:
         selected_choice = question.choice_set.get(pk=request.POST['choice'])
     except (KeyError, Choice.DoesNotExist):
@@ -99,15 +124,26 @@ def signup(request):
         form = SignupForm()
     return render(request, "registration/signup.html", {"form": form, "error": error})
 
+# Here you can find flaw 2
 @login_required
 def create(request):
     if request.method == "POST":
         form = QuestionForm(request.POST)
         if form.is_valid():
+            password = form.cleaned_data["access_password"]
+
+            # FLAW 2: A02:2021 – Cryptographic Failures
+            # The access password is stored in the database as plain text.
+            stored_password = password
+
+            # FIX 2: Store only a salted hash of the password.
+            # stored_password = make_password(password) if password else ""
+
             question = Question.objects.create(
                 question_text=form.cleaned_data["question_text"],
                 pub_date=timezone.now(),
                 owner=request.user,
+                access_password=stored_password,
             )
             for field in ["choice1", "choice2", "choice3", "choice4"]:
                 text = form.cleaned_data[field]
