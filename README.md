@@ -34,3 +34,4 @@ With this poll application, users can:
 - Vote
 - See their own polls
 - Delete their own polls
+- Search polls
